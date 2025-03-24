@@ -7,7 +7,7 @@ aioaria2
 aioqbt
 cloudscraper
 dnspython
-pyrofork
+pyrofork==2.2.11
 tgcrypto-pyrofork
 fastapi
 feedparser
