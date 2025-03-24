@@ -218,7 +218,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
         msg += f"<code>{escape(f'{task.name()}')}</code>"
         if task.listener.subname:
             msg += f"\n<i>{task.listener.subname}</i>"
-        msg += f"\n<b>@{source(task.listener)}</b>"
+        msg += f"\n"
         if (
             tstatus not in [MirrorStatus.STATUS_SEED, MirrorStatus.STATUS_QUEUEUP]
             and task.listener.progress
@@ -250,7 +250,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
             msg += f" | <b>Time: </b>{task.seeding_time()}"
         else:
             msg += f"\n<b>Size: </b>{task.size()}"
-        msg += f"\n<b>Tool:</b> {task.tool}"
+        msg += f"\n<b>Tool:</b> {task.tool} | <b>@{source(task.listener)}</b>"
         task_gid = task.gid()
         short_gid = task_gid[-8:] if task_gid.startswith("SABnzbd") else task_gid[:8]
         msg += f"\n<b>/stop_{short_gid}</b>\n\n"
