@@ -41,7 +41,7 @@ class Config:
     RSS_CHAT: str = ""
     RSS_DELAY: int = 600
     RSS_SIZE_LIMIT: int = 0
-    SHOW_CLOUD_LINK: bool = True
+    SHOW_CLOUD_LINK: bool = False
     STOP_DUPLICATE: bool = False
     STREAMWISH_API: str = ""
     SUDO_USERS: str = ""
