@@ -241,7 +241,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
                 tstatus == MirrorStatus.STATUS_DOWNLOAD and task.listener.is_torrent
             ) or task.listener.is_qbit:
                 with contextlib.suppress(Exception):
-                    msg += f"<b>{task.seeders_num()}/{task.leechers_num()}</b>"
+                    msg += f"<b> | {task.seeders_num()}/{task.leechers_num()}</b>"
         elif tstatus == MirrorStatus.STATUS_SEED:
             msg += f"\n<b>Size: </b>{task.size()}"
             msg += f"\n<b>Speed: </b>{task.seed_speed()}"
