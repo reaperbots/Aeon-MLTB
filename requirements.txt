@@ -7,8 +7,7 @@ aioaria2
 aioqbt
 cloudscraper
 dnspython
-pyrofork
-tgcrypto-pyrofork
+electrogram
 fastapi
 feedparser
 google-api-python-client
