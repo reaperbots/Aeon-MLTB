@@ -232,10 +232,10 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
             else:
                 subsize = ""
                 count = ""
-            msg += f"\n{task.processed_bytes()}{subsize} of"
+            msg += f"\n<b>{task.processed_bytes()}{subsize} of"
             if count:
                 msg += f"\n<b>Count:</b> {count}"
-            msg += f"{task.size()}"
+            msg += f" {task.size()}</b>"
             msg += f"\n<b>Estimated:</b> {task.eta()}"
             if (
                 tstatus == MirrorStatus.STATUS_DOWNLOAD and task.listener.is_torrent
