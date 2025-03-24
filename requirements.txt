@@ -8,7 +8,7 @@ aioqbt
 cloudscraper
 dnspython
 kurigram
-tgcrypto-pyrofork
+tgcrypto-kurigram
 fastapi
 feedparser
 google-api-python-client
