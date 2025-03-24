@@ -40,7 +40,7 @@ class BotCommands:
     ExecCommand = f"exec{i}"
     ClearLocalsCommand = f"clearlocals{i}"
     BotSetCommand = [f"bsetting{i}", f"bs{i}"]
-    UserSetCommand = f"usetting{i}"
+    UserSetCommand = [f"usetting{i}", f"us{i}"]
     SpeedTest = f"speedtest{i}"
     BroadcastCommand = [f"broadcast{i}", "broadcastall"]
     SelectCommand = f"sel{i}"
