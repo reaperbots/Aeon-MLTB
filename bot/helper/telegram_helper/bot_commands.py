@@ -14,8 +14,8 @@ class BotCommands:
     JdLeechCommand = [f"jdleech{i}", f"jl{i}"]
     NzbLeechCommand = [f"nzbleech{i}", f"nl{i}"]
     YtdlLeechCommand = [f"ytdlleech{i}", f"yl{i}"]
-    CloneCommand = f"clone{i}"
-    MediaInfoCommand = f"mediainfo{i}"
+    CloneCommand = [f"clone{i}", f"c{i}"]
+    MediaInfoCommand = [f"mediainfo{i}", f"{mi}"]
     CountCommand = f"count{i}"
     DeleteCommand = f"del{i}"
     CancelAllCommand = f"cancelall{i}"
@@ -25,8 +25,8 @@ class BotCommands:
     HydraSearchCommamd = f"nzbsearch{i}"
     StatusCommand = [f"status{i}", "statusall"]
     UsersCommand = f"users{i}"
-    AuthorizeCommand = f"auth{i}"
-    UnAuthorizeCommand = f"unauth{i}"
+    AuthorizeCommand = [f"auth{i}", f"a{i}"]
+    UnAuthorizeCommand = [f"unauth{i}", f"ua{i}"]
     AddSudoCommand = f"addsudo{i}"
     RmSudoCommand = f"rmsudo{i}"
     PingCommand = f"ping{i}"
@@ -39,7 +39,7 @@ class BotCommands:
     AExecCommand = f"aexec{i}"
     ExecCommand = f"exec{i}"
     ClearLocalsCommand = f"clearlocals{i}"
-    BotSetCommand = f"bsetting{i}"
+    BotSetCommand = [f"bsetting{i}", f"bs{i}"]
     UserSetCommand = f"usetting{i}"
     SpeedTest = f"speedtest{i}"
     BroadcastCommand = [f"broadcast{i}", "broadcastall"]
