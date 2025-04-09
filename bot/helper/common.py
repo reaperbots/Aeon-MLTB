@@ -860,7 +860,7 @@ class TaskConfig:
     async def remove_www_prefix(self, dl_path):
         def clean_filename(name):
             return sub(
-                r"\b(www\.[^\s/$.?#].[^\s]* - )\b",
+                r"www\S+ - ",
                 "",
                 name,
                 flags=IGNORECASE,
