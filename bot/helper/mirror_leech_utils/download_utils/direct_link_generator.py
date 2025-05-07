@@ -6,7 +6,7 @@ from json import loads
 from os import path as ospath
 from re import findall, match, search
 from time import sleep
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote
 from uuid import uuid4
 
 from cloudscraper import create_scraper
@@ -49,7 +49,7 @@ def direct_link_generator(link):
         return hxfile(link)
     if "1drv.ms" in domain:
         return onedrive(link)
-    if "pixeldrain.com" in domain:
+    if any(x in domain for x in ["pixeldrain.com", "pixeldra.in"]):
         return pixeldrain(link)
     if "racaty" in domain:
         return racaty(link)
@@ -149,6 +149,7 @@ def direct_link_generator(link):
             "freeterabox.com",
             "1024terabox.com",
             "teraboxshare.com",
+            "terafileshare.com",
         ]
     ):
         return terabox(link)
@@ -543,27 +544,13 @@ def onedrive(link):
 
 
 def pixeldrain(url):
-    """Based on https://github.com/yash-dk/TorToolkit-Telegram"""
-    url = url.strip("/ ")
-    file_id = url.split("/")[-1]
-    if url.split("/")[-2] == "l":
-        info_link = f"https://pixeldrain.com/api/list/{file_id}"
-        dl_link = f"https://pixeldrain.com/api/list/{file_id}/zip?download"
-    else:
-        info_link = f"https://pixeldrain.com/api/file/{file_id}/info"
-        dl_link = f"https://pixeldrain.com/api/file/{file_id}?download"
-    with create_scraper() as session:
-        try:
-            resp = session.get(info_link).json()
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
-    if resp["success"]:
-        return dl_link
-    raise DirectDownloadLinkException(
-        f"ERROR: Cant't download due {resp['message']}.",
-    )
+    try:
+        url = url.rstrip("/")
+        code = url.split("/")[-1].split("?", 1)[0]
+        response = get("https://pd.cybar.xyz/", allow_redirects=True)
+        return response.url + code
+    except Exception as e:
+        raise DirectDownloadLinkException("ERROR: Direct link not found")
 
 
 def streamtape(url):
@@ -735,76 +722,15 @@ def uploadee(url):
     raise DirectDownloadLinkException("ERROR: Direct Link not found")
 
 
-def terabox(url, video_quality="HD Video", save_dir="HD_Video"):
-    """Terabox direct link generator
-    https://github.com/Dawn-India/Z-Mirror"""
-
-    pattern = r"/s/(\w+)|surl=(\w+)"
-    if not search(pattern, url):
-        raise DirectDownloadLinkException("ERROR: Invalid terabox URL")
-
-    netloc = urlparse(url).netloc
-    terabox_url = url.replace(netloc, "1024tera.com")
-
-    urls = [
-        "https://ytshorts.savetube.me/api/v1/terabox-downloader",
-        f"https://teraboxvideodownloader.nepcoderdevs.workers.dev/?url={terabox_url}",
-        f"https://terabox.udayscriptsx.workers.dev/?url={terabox_url}",
-        f"https://mavimods.serv00.net/Mavialt.php?url={terabox_url}",
-        f"https://mavimods.serv00.net/Mavitera.php?url={terabox_url}",
-    ]
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Content-Type": "application/json",
-        "Origin": "https://ytshorts.savetube.me",
-        "Alt-Used": "ytshorts.savetube.me",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-    }
-
-    for base_url in urls:
-        try:
-            if "api/v1" in base_url:
-                response = post(base_url, headers=headers, json={"url": terabox_url})
-            else:
-                response = get(base_url)
-
-            if response.status_code == 200:
-                break
-        except RequestException as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
-    else:
-        raise DirectDownloadLinkException("ERROR: Unable to fetch the JSON data")
-
-    data = response.json()
-    details = {"contents": [], "title": "", "total_size": 0}
-
-    for item in data["response"]:
-        title = item["title"]
-        resolutions = item.get("resolutions", {})
-        if zlink := resolutions.get(video_quality):
-            details["contents"].append(
-                {
-                    "url": zlink,
-                    "filename": title,
-                    "path": ospath.join(title, save_dir),
-                },
-            )
-        details["title"] = title
-
-    if not details["contents"]:
-        raise DirectDownloadLinkException("ERROR: No valid download links found")
-
-    if len(details["contents"]) == 1:
-        return details["contents"][0]["url"]
-
-    return details
+def terabox(url):
+    try:
+        encoded_url = quote(url)
+        final_url = (
+            f"https://teradlrobot.cheemsbackup.workers.dev/?url={encoded_url}"
+        )
+        return final_url
+    except Exception as e:
+        raise DirectDownloadLinkException("ERROR: Failed to bypass Terabox URL")
 
 
 def filepress(url):

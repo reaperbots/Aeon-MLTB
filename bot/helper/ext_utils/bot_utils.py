@@ -1,3 +1,4 @@
+import contextlib
 from asyncio import (
     create_subprocess_exec,
     create_subprocess_shell,
@@ -154,8 +155,12 @@ def arg_parser(items, arg_base):
                     sub_list.append(items[j])
                 if sub_list:
                     value = " ".join(sub_list)
-                    if part == "-ff" and not value.strip().startswith("["):
-                        arg_base[part].add(value)
+                    if part == "-ff":
+                        if not value.strip().startswith("["):
+                            arg_base[part].add(value)
+                        else:
+                            with contextlib.suppress(Exception):
+                                arg_base[part].add(eval(value))
                     else:
                         arg_base[part] = value
                     i += len(sub_list)

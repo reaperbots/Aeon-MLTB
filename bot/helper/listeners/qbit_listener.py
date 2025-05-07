@@ -5,6 +5,7 @@ from time import time
 from aiofiles.os import path as aiopath
 from aiofiles.os import remove
 from aiohttp.client_exceptions import ClientError
+from aioqbt.exc import AQError
 
 from bot import (
     LOGGER,
@@ -48,22 +49,23 @@ async def _on_seed_finish(tor):
     ext_hash = tor.hash
     LOGGER.info(f"Cancelling Seed: {tor.name}")
     if task := await get_task_by_gid(ext_hash[:12]):
-        msg = f"Seeding stopped with Ratio: {round(tor.ratio, 3)} and Time: {get_readable_time(int(tor.seeding_time.total_seconds()))}"
+        msg = f"Seeding stopped with Ratio: {round(tor.ratio, 3)} and Time: {get_readable_time(int(tor.seeding_time.total_seconds() or '0'))}"
         await task.listener.on_upload_error(msg)
     await _remove_torrent(ext_hash, tor.tags[0])
 
 
 @new_task
 async def _stop_duplicate(tor):
-    if task := await get_task_by_gid(tor.hash[:12]):
-        if task.listener.stop_duplicate:
-            task.listener.name = tor.content_path.rsplit("/", 1)[-1].rsplit(
-                ".!qB",
-                1,
-            )[0]
-            msg, button = await stop_duplicate_check(task.listener)
-            if msg:
-                _on_download_error(msg, tor, button)
+    if (
+        task := await get_task_by_gid(tor.hash[:12])
+    ) and task.listener.stop_duplicate:
+        task.listener.name = tor.content_path.rsplit("/", 1)[-1].rsplit(
+            ".!qB",
+            1,
+        )[0]
+        msg, button = await stop_duplicate_check(task.listener)
+        if msg:
+            _on_download_error(msg, tor, button)
 
 
 @new_task
@@ -177,7 +179,12 @@ async def _qb_listener():
                         int(tor_info.completion_on.timestamp()) != -1
                         and not qb_torrents[tag]["uploaded"]
                         and state
-                        not in ["checkingUP", "checkingDL", "checkingResumeData"]
+                        in [
+                            "queuedUP",
+                            "stalledUP",
+                            "uploading",
+                            "forcedUP",
+                        ]
                     ):
                         qb_torrents[tag]["uploaded"] = True
                         await _on_download_complete(tor_info)
@@ -188,7 +195,7 @@ async def _qb_listener():
                         qb_torrents[tag]["seeding"] = False
                         await _on_seed_finish(tor_info)
                         await sleep(0.5)
-            except (ClientError, TimeoutError, Exception) as e:
+            except (ClientError, TimeoutError, Exception, AQError) as e:
                 LOGGER.error(str(e))
         await sleep(3)
 

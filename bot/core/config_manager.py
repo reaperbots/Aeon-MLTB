@@ -50,15 +50,15 @@ class Config:
     TG_PROXY: dict | None = None
     THUMBNAIL_LAYOUT: str = ""
     TORRENT_TIMEOUT: int = 0
-    UPLOAD_PATHS: dict = {}
+    UPLOAD_PATHS: ClassVar[dict[str, str]] = {}
     UPSTREAM_REPO: str = ""
-    USENET_SERVERS: list = []
+    USENET_SERVERS: ClassVar[list[dict[str, object]]] = []
     UPSTREAM_BRANCH: str = "main"
     USER_SESSION_STRING: str = ""
     USER_TRANSMISSION: bool = False
     USE_SERVICE_ACCOUNTS: bool = False
     WEB_PINCODE: bool = False
-    YT_DLP_OPTIONS: dict = {}
+    YT_DLP_OPTIONS: ClassVar[dict[str, Any]] = {}
 
     # INKYPINKY
     METADATA_KEY: str = ""

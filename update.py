@@ -36,7 +36,7 @@ if path.exists("rlog.txt"):
 
 
 class CustomFormatter(Formatter):
-    def formatTime(  # noqa: N802
+    def formatTime(
         self,
         record: LogRecord,
         datefmt: str | None,

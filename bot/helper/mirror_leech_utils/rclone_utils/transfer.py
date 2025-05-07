@@ -506,8 +506,6 @@ class RcloneTransferHelper:
             "-M",
             "-v",
             "--log-systemd",
-            "--buffer-size",
-            "100M",
         ]
         if self._rclone_select:
             cmd.extend(("--files-from", self._listener.link))

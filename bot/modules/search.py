@@ -125,8 +125,7 @@ async def plugin_buttons(user_id):
     buttons = ButtonMaker()
     if not PLUGINS:
         pl = await TorrentManager.qbittorrent.search.plugins()
-        for i in pl:
-            PLUGINS.append(i.name)
+        PLUGINS.extend(i.name for i in pl)
     for siteName in PLUGINS:
         buttons.data_button(
             siteName.capitalize(),

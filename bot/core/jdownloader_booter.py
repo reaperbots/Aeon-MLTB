@@ -60,13 +60,13 @@ class JDownloader(MyJdApi):
             "localapiserverheaderxxssprotection": "1; mode=block",
         }
         await makedirs("/JDownloader/cfg", exist_ok=True)
-        with open(
+        with open(  # noqa: ASYNC230
             "/JDownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json",
             "w",
         ) as sf:
             sf.truncate(0)
             dump(jdata, sf)
-        with open(
+        with open(  # noqa: ASYNC230
             "/JDownloader/cfg/org.jdownloader.api.RemoteAPIConfig.json",
             "w",
         ) as rf:

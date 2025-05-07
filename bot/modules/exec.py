@@ -108,7 +108,7 @@ async def do(func, message):
 @new_task
 async def clear(_, message):
     log_input(message)
-    global namespaces
+    global namespaces  # noqa: PLW0602
     if message.chat.id in namespaces:
         del namespaces[message.chat.id]
     await send("Locals Cleared.", message)

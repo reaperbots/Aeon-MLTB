@@ -1,4 +1,5 @@
 import contextlib
+from asyncio import iscoroutinefunction
 
 from aiofiles.os import path as aiopath
 from aiofiles.os import remove
@@ -47,6 +48,9 @@ async def select(_, message):
         user_id not in user_data or not user_data[user_id].get("SUDO")
     ):
         await send_message(message, "This task is not for you!")
+        return
+    if not iscoroutinefunction(task.status):
+        await send_message(message, "The task have finshed the download stage!")
         return
     if await task.status() not in [
         MirrorStatus.STATUS_DOWNLOAD,

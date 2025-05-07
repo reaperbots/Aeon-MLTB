@@ -19,7 +19,7 @@ from .mirror_leech import (
     nzb_leech,
     nzb_mirror,
 )
-from .nzbsearch import hydra_search
+from .nzb_search import hydra_search
 from .restart import (
     confirm_restart,
     restart_bot,
