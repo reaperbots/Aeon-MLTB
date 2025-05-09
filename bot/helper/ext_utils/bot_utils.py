@@ -160,7 +160,7 @@ def arg_parser(items, arg_base):
                             arg_base[part].add(value)
                         else:
                             with contextlib.suppress(Exception):
-                                arg_base[part].add(eval(value))
+                                arg_base[part].add(tuple(eval(value)))
                     else:
                         arg_base[part] = value
                     i += len(sub_list)

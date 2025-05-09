@@ -39,8 +39,6 @@ def direct_link_generator(link):
         return lulacloud(link)
     if "fuckingfast.co" in domain:
         return fuckingfast_dl(link)
-    if "mediafire.com" in domain:
-        return mediafire(link)
     if "osdn.net" in domain:
         return osdn(link)
     if "github.com" in domain:
@@ -257,9 +255,11 @@ def buzzheavier(url):
 
         if not d_url:
             raise DirectDownloadLinkException("ERROR: Failed to fetch direct link.")
-        parsed_url = urlparse(url)
-        direct_url = f"{parsed_url.scheme}://{parsed_url.netloc}{d_url}"
-        return direct_url
+        if d_url.startswith("http://") or d_url.startswith("https://"):
+            return d_url
+        else:
+            parsed_url = urlparse(url)
+            return f"{parsed_url.scheme}://{parsed_url.netloc}{d_url}"
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {str(e)}")
     finally:
@@ -359,73 +359,6 @@ def devuploads(url):
     direct_link = html.xpath("//input[@name='orilink']/@value")
     session.close()
     return direct_link[0]
-
-
-def mediafire(url, session=None):
-    if "/folder/" in url:
-        return mediafireFolder(url)
-    if "::" in url:
-        _password = url.split("::")[-1]
-        url = url.split("::")[-2]
-    else:
-        _password = ""
-    if final_link := findall(
-        r"https?:\/\/download\d+\.mediafire\.com\/\S+\/\S+\/\S+",
-        url,
-    ):
-        return final_link[0]
-
-    def _repair_download(url, session):
-        try:
-            html = HTML(session.get(url).text)
-            if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
-                return mediafire(f"https://mediafire.com/{new_link[0]}")
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
-
-    if session is None:
-        session = create_scraper()
-        parsed_url = urlparse(url)
-        url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-    try:
-        html = HTML(session.get(url).text)
-    except Exception as e:
-        session.close()
-        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
-    if error := html.xpath('//p[@class="notranslate"]/text()'):
-        session.close()
-        raise DirectDownloadLinkException(f"ERROR: {error[0]}")
-    if html.xpath("//div[@class='passwordPrompt']"):
-        if not _password:
-            session.close()
-            raise DirectDownloadLinkException(
-                f"ERROR: {PASSWORD_ERROR_MESSAGE}".format(url),
-            )
-        try:
-            html = HTML(session.post(url, data={"downloadp": _password}).text)
-        except Exception as e:
-            session.close()
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
-        if html.xpath("//div[@class='passwordPrompt']"):
-            session.close()
-            raise DirectDownloadLinkException("ERROR: Wrong password.")
-    if not (final_link := html.xpath('//a[@aria-label="Download file"]/@href')):
-        if repair_link := html.xpath("//a[@class='retry']/@href"):
-            return _repair_download(repair_link[0], session)
-        raise DirectDownloadLinkException(
-            "ERROR: No links found in this page Try Again",
-        )
-    if final_link[0].startswith("//"):
-        final_url = f"https://{final_link[0][2:]}"
-        if _password:
-            final_url += f"::{_password}"
-        return mediafire(final_url, session)
-    session.close()
-    return final_link[0]
 
 
 def osdn(url):
@@ -1159,162 +1092,6 @@ def gofile(url):
         except Exception as e:
             raise DirectDownloadLinkException(e)
 
-    if len(details["contents"]) == 1:
-        return (details["contents"][0]["url"], details["header"])
-    return details
-
-
-def mediafireFolder(url):
-    if "::" in url:
-        _password = url.split("::")[-1]
-        url = url.split("::")[-2]
-    else:
-        _password = ""
-    try:
-        raw = url.split("/", 4)[-1]
-        folderkey = raw.split("/", 1)[0]
-        folderkey = folderkey.split(",")
-    except Exception:
-        raise DirectDownloadLinkException("ERROR: Could not parse ")
-    if len(folderkey) == 1:
-        folderkey = folderkey[0]
-    details = {"contents": [], "title": "", "total_size": 0, "header": ""}
-
-    session = create_scraper()
-    adapter = HTTPAdapter(
-        max_retries=Retry(total=10, read=10, connect=10, backoff_factor=0.3),
-    )
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    session = create_scraper(
-        browser={"browser": "firefox", "platform": "windows", "mobile": False},
-        delay=10,
-        sess=session,
-    )
-    folder_infos = []
-
-    def __get_info(folderkey):
-        try:
-            if isinstance(folderkey, list):
-                folderkey = ",".join(folderkey)
-            _json = session.post(
-                "https://www.mediafire.com/api/1.5/folder/get_info.php",
-                data={
-                    "recursive": "yes",
-                    "folder_key": folderkey,
-                    "response_format": "json",
-                },
-            ).json()
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__} While getting info",
-            )
-        _res = _json["response"]
-        if "folder_infos" in _res:
-            folder_infos.extend(_res["folder_infos"])
-        elif "folder_info" in _res:
-            folder_infos.append(_res["folder_info"])
-        elif "message" in _res:
-            raise DirectDownloadLinkException(f"ERROR: {_res['message']}")
-        else:
-            raise DirectDownloadLinkException("ERROR: something went wrong!")
-
-    try:
-        __get_info(folderkey)
-    except Exception as e:
-        raise DirectDownloadLinkException(e)
-
-    details["title"] = folder_infos[0]["name"]
-
-    def __scraper(url):
-        session = create_scraper()
-        parsed_url = urlparse(url)
-        url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-
-        def __repair_download(url):
-            try:
-                html = HTML(session.get(url).text)
-                if new_link := html.xpath('//a[@id="continue-btn"]/@href'):
-                    return __scraper(f"https://mediafire.com/{new_link[0]}")
-            except Exception:
-                return None
-
-        try:
-            html = HTML(session.get(url).text)
-        except Exception:
-            return None
-        if html.xpath("//div[@class='passwordPrompt']"):
-            if not _password:
-                raise DirectDownloadLinkException(
-                    f"ERROR: {PASSWORD_ERROR_MESSAGE}".format(url),
-                )
-            try:
-                html = HTML(session.post(url, data={"downloadp": _password}).text)
-            except Exception:
-                return None
-            if html.xpath("//div[@class='passwordPrompt']"):
-                return None
-        if final_link := html.xpath('//a[@aria-label="Download file"]/@href'):
-            if final_link[0].startswith("//"):
-                return __scraper(f"https://{final_link[0][2:]}")
-            return final_link[0]
-        if repair_link := html.xpath("//a[@class='retry']/@href"):
-            return __repair_download(repair_link[0])
-        return None
-
-    def __get_content(folderKey, folderPath="", content_type="folders"):
-        try:
-            params = {
-                "content_type": content_type,
-                "folder_key": folderKey,
-                "response_format": "json",
-            }
-            _json = session.get(
-                "https://www.mediafire.com/api/1.5/folder/get_content.php",
-                params=params,
-            ).json()
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__} While getting content",
-            )
-        _res = _json["response"]
-        if "message" in _res:
-            raise DirectDownloadLinkException(f"ERROR: {_res['message']}")
-        _folder_content = _res["folder_content"]
-        if content_type == "folders":
-            folders = _folder_content["folders"]
-            for folder in folders:
-                if folderPath:
-                    newFolderPath = ospath.join(folderPath, folder["name"])
-                else:
-                    newFolderPath = ospath.join(folder["name"])
-                __get_content(folder["folderkey"], newFolderPath)
-            __get_content(folderKey, folderPath, "files")
-        else:
-            files = _folder_content["files"]
-            for file in files:
-                item = {}
-                if not (_url := __scraper(file["links"]["normal_download"])):
-                    continue
-                item["filename"] = file["filename"]
-                if not folderPath:
-                    folderPath = details["title"]
-                item["path"] = ospath.join(folderPath)
-                item["url"] = _url
-                if "size" in file:
-                    size = file["size"]
-                    if isinstance(size, str) and size.isdigit():
-                        size = float(size)
-                    details["total_size"] += size
-                details["contents"].append(item)
-
-    try:
-        for folder in folder_infos:
-            __get_content(folder["folderkey"], folder["name"])
-    except Exception as e:
-        raise DirectDownloadLinkException(e)
-    finally:
-        session.close()
     if len(details["contents"]) == 1:
         return (details["contents"][0]["url"], details["header"])
     return details
