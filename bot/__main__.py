@@ -6,7 +6,6 @@ from pyrogram.types import BotCommand
 from . import LOGGER, bot_loop
 from .core.config_manager import Config, SystemEnv
 
-# Initialize Configurations
 LOGGER.info("Loading config...")
 Config.load()
 SystemEnv.load()
@@ -18,7 +17,6 @@ bot_loop.run_until_complete(load_settings())
 from .core.aeon_client import TgClient
 from .helper.telegram_helper.bot_commands import BotCommands
 
-# Commands and Descriptions
 COMMANDS = {
     "MirrorCommand": "- Start mirroring",
     "LeechCommand": "- Start leeching",
@@ -43,7 +41,6 @@ COMMANDS = {
     "BotSetCommand": "- [ADMIN] Open Bot settings",
     "LogCommand": "- [ADMIN] View log",
     "RestartCommand": "- [ADMIN] Restart the bot",
-    # "RestartSessionsCommand": "- [ADMIN] Restart the session instead of the bot",
 }
 
 

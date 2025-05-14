@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Delete unnecessary directories and files
         run: |
@@ -75,3 +75,5 @@ jobs:
           HD_TELEGRAM_HASH: ${{inputs.TELEGRAM_HASH}}
           HD_DATABASE_URL: ${{inputs.DATABASE_URL}}
           HD_BOT_TOKEN: ${{inputs.BOT_TOKEN}}
+          HD_HEROKU_APP_NAME: ${{inputs.HEROKU_APP_NAME}}
+          HD_HEROKU_API_KEY: ${{inputs.HEROKU_API_KEY}}

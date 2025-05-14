@@ -530,9 +530,9 @@ class TelegramUploader:
             raise err
 
     async def _copy_message(self):
-        await sleep(1)
+        await sleep(0.5)
 
-        async def _copy(target, retries=3):
+        async def _copy(target, retries=2):
             for attempt in range(retries):
                 try:
                     msg = await TgClient.bot.get_messages(
@@ -554,6 +554,13 @@ class TelegramUploader:
         if self._user_dump:
             with contextlib.suppress(Exception):
                 await _copy(int(self._user_dump))
+        if (
+            isinstance(Config.LEECH_DUMP_CHAT, list)
+            and len(Config.LEECH_DUMP_CHAT) > 1
+        ):
+            for i in Config.LEECH_DUMP_CHAT[1:]:
+                with contextlib.suppress(Exception):
+                    await _copy(i)
 
     @property
     def speed(self):

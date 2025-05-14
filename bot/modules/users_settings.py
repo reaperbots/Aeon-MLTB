@@ -36,7 +36,6 @@ no_thumb = "https://te.legra.ph/file/237953bad476d0de0b8eb.jpg"
 leech_options = [
     "THUMBNAIL",
     "LEECH_SPLIT_SIZE",
-    # "LEECH_DUMP_CHAT",
     "LEECH_FILENAME_PREFIX",
     "LEECH_FILENAME_CAPTION",
     "THUMBNAIL_LAYOUT",

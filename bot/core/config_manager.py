@@ -1,7 +1,11 @@
 import ast
+import logging
 import os
 from importlib import import_module
 from typing import Any, ClassVar
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class Config:
@@ -22,7 +26,7 @@ class Config:
     JD_EMAIL: str = ""
     JD_PASS: str = ""
     IS_TEAM_DRIVE: bool = False
-    LEECH_DUMP_CHAT: str = ""
+    LEECH_DUMP_CHAT: ClassVar[list[str]] = []
     LEECH_FILENAME_PREFIX: str = ""
     LEECH_SPLIT_SIZE: int = 2097152000
     MEDIA_GROUP: bool = False
@@ -47,7 +51,7 @@ class Config:
     SUDO_USERS: str = ""
     TELEGRAM_API: int = 0
     TELEGRAM_HASH: str = ""
-    TG_PROXY: dict | None = None
+    TG_PROXY: ClassVar[dict[str, str]] = {}
     THUMBNAIL_LAYOUT: str = ""
     TORRENT_TIMEOUT: int = 0
     UPLOAD_PATHS: ClassVar[dict[str, str]] = {}
@@ -74,124 +78,144 @@ class Config:
     HYDRA_IP: str = ""
     HYDRA_API_KEY: str = ""
     INSTADL_API: str = ""
+    HEROKU_APP_NAME: str = ""
+    HEROKU_API_KEY: str = ""
 
     @classmethod
-    def get(cls, key):
-        return getattr(cls, key) if hasattr(cls, key) else None
+    def _convert(cls, key, value):
+        expected_type = type(getattr(cls, key))
+        if value is None:
+            return None
+
+        if key == "LEECH_DUMP_CHAT":
+            if isinstance(value, list):
+                return [str(v).strip() for v in value if str(v).strip()]
+
+            if isinstance(value, str):
+                value = value.strip()
+                if not value:
+                    return []
+                try:
+                    evaluated = ast.literal_eval(value)
+                    if isinstance(evaluated, list):
+                        return [str(v).strip() for v in evaluated if str(v).strip()]
+                except (ValueError, SyntaxError):
+                    pass
+                return [value] if value else []
+
+            raise TypeError(f"{key} should be list[str], got {type(value).__name__}")
+
+        if isinstance(value, expected_type):
+            return value
+
+        if expected_type is bool:
+            return str(value).strip().lower() in {"true", "1", "yes"}
+
+        if expected_type in [list, dict]:
+            if not isinstance(value, str):
+                raise TypeError(
+                    f"{key} should be {expected_type.__name__}, got {type(value).__name__}"
+                )
+
+            try:
+                evaluated = ast.literal_eval(value)
+                if isinstance(evaluated, expected_type):
+                    return evaluated
+                raise TypeError
+            except (ValueError, SyntaxError, TypeError) as e:
+                raise TypeError(
+                    f"{key} should be {expected_type.__name__}, got invalid string: {value}"
+                ) from e
+
+        try:
+            return expected_type(value)
+        except (ValueError, TypeError) as exc:
+            raise TypeError(
+                f"Invalid type for {key}: expected {expected_type}, got {type(value)}"
+            ) from exc
 
     @classmethod
-    def set(cls, key, value):
-        if hasattr(cls, key):
-            setattr(cls, key, value)
-        else:
+    def _normalize_value(cls, key: str, value: Any) -> Any:
+        if isinstance(value, str):
+            value = value.strip()
+
+        if key == "DEFAULT_UPLOAD" and value != "gd":
+            return "rc"
+
+        if key in {"BASE_URL", "RCLONE_SERVE_URL", "INDEX_URL"}:
+            return value.strip("/")
+
+        if key == "USENET_SERVERS" and (
+            not isinstance(value, list)
+            or not value
+            or not isinstance(value[0], dict)
+            or not value[0].get("host")
+        ):
+            return []
+
+        return value
+
+    @classmethod
+    def get(cls, key: str) -> Any:
+        return getattr(cls, key, None)
+
+    @classmethod
+    def set(cls, key: str, value: Any):
+        if not hasattr(cls, key):
             raise KeyError(f"{key} is not a valid configuration key.")
+        converted = cls._convert(key, value)
+        normalized = cls._normalize_value(key, converted)
+        setattr(cls, key, normalized)
 
     @classmethod
-    def get_all(cls):
-        return {
-            key: getattr(cls, key)
-            for key in sorted(cls.__dict__)
-            if not key.startswith("__") and not callable(getattr(cls, key))
-        }
+    def get_all(cls) -> dict:
+        return {key: getattr(cls, key) for key in sorted(cls.__annotations__)}
 
     @classmethod
     def load(cls):
         try:
             settings = import_module("config")
         except ModuleNotFoundError:
+            logger.warning("No config.py module found.")
             return
-        else:
-            for attr in dir(settings):
-                if hasattr(cls, attr):
-                    value = getattr(settings, attr)
-                    if not value:
-                        continue
-                    if isinstance(value, str):
-                        value = value.strip()
-                    if attr == "DEFAULT_UPLOAD" and value != "gd":
-                        value = "rc"
-                    elif (
-                        attr
-                        in [
-                            "BASE_URL",
-                            "RCLONE_SERVE_URL",
-                            "INDEX_URL",
-                        ]
-                        and value
-                    ):
-                        value = value.strip("/")
-                    elif attr == "USENET_SERVERS":
-                        try:
-                            if not value[0].get("host"):
-                                continue
-                        except Exception:
-                            continue
-                    setattr(cls, attr, value)
+
+        for attr in dir(settings):
+            if not cls._is_valid_config_attr(settings, attr):
+                continue
+
+            value = getattr(settings, attr)
+            if not value:
+                continue
+
+            try:
+                cls.set(attr, value)
+            except Exception as e:
+                logger.warning(f"Skipping config '{attr}' due to error: {e}")
 
     @classmethod
-    def load_dict(cls, config_dict):
+    def load_dict(cls, config_dict: dict[str, Any]):
         for key, value in config_dict.items():
-            if hasattr(cls, key):
-                if key == "DEFAULT_UPLOAD" and value != "gd":
-                    value = "rc"
-                elif (
-                    key
-                    in [
-                        "BASE_URL",
-                        "RCLONE_SERVE_URL",
-                        "INDEX_URL",
-                    ]
-                    and value
-                ):
-                    value = value.strip("/")
-                elif key == "USENET_SERVERS":
-                    try:
-                        if not value[0].get("host"):
-                            value = []
-                    except Exception:
-                        value = []
-                setattr(cls, key, value)
+            try:
+                cls.set(key, value)
+            except Exception as e:
+                logger.warning(f"Skipping config '{key}' due to error: {e}")
+
+    @classmethod
+    def _is_valid_config_attr(cls, module, attr: str) -> bool:
+        return (
+            not attr.startswith("__")
+            and not callable(getattr(module, attr))
+            and attr in cls.__annotations__
+        )
 
 
 class SystemEnv:
     @classmethod
     def load(cls):
-        config_vars = Config.get_all()
-        for key in config_vars:
+        for key in Config.__annotations__:
             env_value = os.getenv(key)
             if env_value is not None:
-                converted_value = cls._convert_type(key, env_value)
-                Config.set(key, converted_value)
-
-    @classmethod
-    def _convert_type(cls, key: str, value: str) -> Any:
-        original_value = getattr(Config, key, None)
-
-        if original_value is None:
-            return value
-
-        if isinstance(original_value, bool):
-            return value.lower() in ("true", "1", "yes")
-
-        if isinstance(original_value, int):
-            try:
-                return int(value)
-            except ValueError:
-                return original_value
-
-        if isinstance(original_value, float):
-            try:
-                return float(value)
-            except ValueError:
-                return original_value
-
-        if isinstance(original_value, list):
-            return value.split(",")
-
-        if isinstance(original_value, dict):
-            try:
-                return ast.literal_eval(value)
-            except (SyntaxError, ValueError):
-                return original_value
-
-        return value
+                try:
+                    Config.set(key, env_value)
+                except Exception as e:
+                    logger.warning(f"Env override failed for '{key}': {e}")

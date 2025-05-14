@@ -31,7 +31,6 @@ class BotCommands:
     RmSudoCommand = f"rmsudo{i}"
     PingCommand = f"ping{i}"
     RestartCommand = [f"restart{i}", "restartall"]
-    RestartSessionsCommand = f"restartses{i}"
     StatsCommand = f"stats{i}"
     HelpCommand = f"help{i}"
     LogCommand = f"log{i}"

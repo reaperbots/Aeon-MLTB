@@ -2,6 +2,7 @@ import contextlib
 import os
 from asyncio import gather, sleep
 from collections import Counter
+from copy import deepcopy
 from os import path as ospath
 from os import walk
 from re import IGNORECASE, findall, sub
@@ -243,9 +244,9 @@ class TaskConfig:
 
         if self.ffmpeg_cmds and not isinstance(self.ffmpeg_cmds, list):
             if self.user_dict.get("FFMPEG_CMDS", None):
-                ffmpeg_dict = self.user_dict["FFMPEG_CMDS"]
+                ffmpeg_dict = deepcopy(self.user_dict["FFMPEG_CMDS"])
             elif "FFMPEG_CMDS" not in self.user_dict and Config.FFMPEG_CMDS:
-                ffmpeg_dict = Config.FFMPEG_CMDS
+                ffmpeg_dict = deepcopy(Config.FFMPEG_CMDS)
             else:
                 ffmpeg_dict = None
             if ffmpeg_dict is None:
@@ -345,11 +346,9 @@ class TaskConfig:
                 ) != self.get_config_path(self.up_dest):
                     raise ValueError("You must use the same config to clone!")
         else:
-            self.up_dest = (
-                self.up_dest
-                or self.user_dict.get("LEECH_DUMP_CHAT")
-                or Config.LEECH_DUMP_CHAT
-            )
+            chat = Config.LEECH_DUMP_CHAT
+            main_chat = chat[0] if isinstance(chat, list) and chat else chat or ""
+            self.up_dest = self.up_dest or main_chat
             self.hybrid_leech = TgClient.IS_PREMIUM_USER and (
                 self.user_dict.get("HYBRID_LEECH")
                 or (Config.HYBRID_LEECH and "HYBRID_LEECH" not in self.user_dict)

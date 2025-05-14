@@ -24,7 +24,6 @@ from .restart import (
     confirm_restart,
     restart_bot,
     restart_notification,
-    restart_sessions,
 )
 from .rss import get_rss_menu, rss_listener
 from .search import initiate_search_tools, torrent_search, torrent_search_update
@@ -81,7 +80,6 @@ __all__ = [
     "remove_sudo",
     "restart_bot",
     "restart_notification",
-    "restart_sessions",
     "rss_listener",
     "run_shell",
     "select",

@@ -14,15 +14,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
-      - name: Install ruff
-        run: pip install ruff
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
 
-      - name: Run ruff to format code
+      - name: Run ruff to lint and format code
         run: |
-          ruff check . --exit-zero
-          ruff format .
+          uv tool run ruff check . --exit-zero
+          uv tool run ruff format .
           git add -u
 
       - name: Commit and push changes
