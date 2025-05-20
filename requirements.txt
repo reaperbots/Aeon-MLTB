@@ -18,7 +18,6 @@ httpx
 jinja2
 langcodes
 lxml
-motor
 natsort
 pillow
 psutil

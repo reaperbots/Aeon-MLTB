@@ -28,6 +28,7 @@ COMMANDS = {
     "YtdlLeechCommand": "- Leech through yt-dlp supported link",
     "CloneCommand": "- Copy file/folder to Drive",
     "MediaInfoCommand": "- Get mediainfo",
+    "SoxCommand": "- Get audio spectrum",
     "ForceStartCommand": "- Start task from queue",
     "CountCommand": "- Count file/folder on Google Drive",
     "ListCommand": "- Search in Drive",

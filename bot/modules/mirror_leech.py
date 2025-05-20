@@ -116,7 +116,7 @@ class Mirror(TaskListener):
             "-rcf": "",
             "-au": "",
             "-ap": "",
-            "-h": "",
+            "-h": [],
             "-t": "",
             "-ca": "",
             "-cv": "",
@@ -160,6 +160,8 @@ class Mirror(TaskListener):
         self.ffmpeg_cmds = args["-ff"]
 
         headers = args["-h"]
+        if headers:
+            headers = headers.split("|")
         is_bulk = args["-b"]
 
         bulk_start = 0
@@ -378,6 +380,9 @@ class Mirror(TaskListener):
                     await self.remove_from_same_dir()
                     await delete_links(self.message)
                     return await auto_delete_message(x, time=300)
+            content_type = await get_content_type(self.link)  # recheck with new link
+            if content_type and "x-bittorrent" in content_type:
+                self.is_qbit = True
 
         if file_ is not None:
             create_task(
@@ -404,7 +409,11 @@ class Mirror(TaskListener):
             pssw = args["-ap"]
             if ussr or pssw:
                 auth = f"{ussr}:{pssw}"
-                headers += f" authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
+                headers.extend(
+                    [
+                        f"authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
+                    ]
+                )
             create_task(add_aria2_download(self, path, headers, ratio, seed_time))
         await delete_links(self.message)
         return None

@@ -210,6 +210,11 @@ def add_handlers():
             BotCommands.HydraSearchCommamd,
             CustomFilters.authorized,
         ),
+        "spectrum_handler": (
+            spectrum_handler,
+            BotCommands.SoxCommand,
+            CustomFilters.authorized,
+        ),
     }
 
     for handler_func, command_name, custom_filter in command_filters.values():

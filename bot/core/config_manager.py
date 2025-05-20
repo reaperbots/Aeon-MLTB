@@ -31,6 +31,8 @@ class Config:
     LEECH_SPLIT_SIZE: int = 2097152000
     MEDIA_GROUP: bool = False
     HYBRID_LEECH: bool = False
+    HYDRA_IP: str = ""
+    HYDRA_API_KEY: str = ""
     NAME_SUBSTITUTE: str = ""
     OWNER_ID: int = 0
     QUEUE_ALL: int = 0
@@ -75,8 +77,6 @@ class Config:
     FSUB_IDS: str = ""
     LOG_CHAT_ID: int = 0
     LEECH_FILENAME_CAPTION: str = ""
-    HYDRA_IP: str = ""
-    HYDRA_API_KEY: str = ""
     INSTADL_API: str = ""
     HEROKU_APP_NAME: str = ""
     HEROKU_API_KEY: str = ""

@@ -29,6 +29,7 @@ from .rss import get_rss_menu, rss_listener
 from .search import initiate_search_tools, torrent_search, torrent_search_update
 from .services import aeon_callback, log, ping, start
 from .shell import run_shell
+from .sox import spectrum_handler
 from .speedtest import speedtest
 from .stats import bot_stats, get_packages_version
 from .status import status_pages, task_status
@@ -86,6 +87,7 @@ __all__ = [
     "select_type",
     "send_bot_settings",
     "send_user_settings",
+    "spectrum_handler",
     "speedtest",
     "start",
     "status_pages",

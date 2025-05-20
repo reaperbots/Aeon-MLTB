@@ -235,22 +235,19 @@ def buzzheavier(url):
     @param link: URL from buzzheavier
     @return: Direct download link
     """
-    session = Session()
     if not "/download" in url:
         url += "/download"
 
     # Normalize URL
     url = url.strip()
-    session.headers.update(
-        {
-            "referer": url.split("/download")[0],
-            "hx-current-url": url.split("/download")[0],
-            "hx-request": "true",
-            "priority": "u=1, i",
-        }
-    )
+    headers = {
+        "referer": url.split("/download")[0],
+        "hx-current-url": url.split("/download")[0],
+        "hx-request": "true",
+        "priority": "u=1, i",
+    }
     try:
-        response = session.get(url)
+        response = get(url, headers=headers)
         d_url = response.headers.get("Hx-Redirect")
 
         if not d_url:
@@ -262,8 +259,6 @@ def buzzheavier(url):
             return f"{parsed_url.scheme}://{parsed_url.netloc}{d_url}"
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {str(e)}")
-    finally:
-        session.close()
 
 
 def fuckingfast_dl(url):
@@ -272,11 +267,10 @@ def fuckingfast_dl(url):
     @param url: URL from fuckingfast.co
     @return: Direct download link
     """
-    session = Session()
     url = url.strip()
 
     try:
-        response = session.get(url)
+        response = get(url)
         content = response.text
         pattern = r'window\.open\((["\'])(https://fuckingfast\.co/dl/[^"\']+)\1'
         match = search(pattern, content)
@@ -291,8 +285,6 @@ def fuckingfast_dl(url):
 
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
-    finally:
-        session.close()
 
 
 def lulacloud(url):
@@ -301,14 +293,11 @@ def lulacloud(url):
     @param url: URL from www.lulacloud.com
     @return: Direct download link
     """
-    session = Session()
     try:
-        res = session.post(url, headers={"Referer": url}, allow_redirects=False)
+        res = post(url, headers={"Referer": url}, allow_redirects=False)
         return res.headers["location"]
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
-    finally:
-        session.close()
 
 
 def devuploads(url):
@@ -317,48 +306,46 @@ def devuploads(url):
     @param url: URL from devuploads.com
     @return: Direct download link
     """
-    session = Session()
-    res = session.get(url)
-    html = HTML(res.text)
-    if not html.xpath("//input[@name]"):
-        raise DirectDownloadLinkException("ERROR: Unable to find link data")
-    data = {i.get("name"): i.get("value") for i in html.xpath("//input[@name]")}
-    res = session.post("https://gujjukhabar.in/", data=data)
-    html = HTML(res.text)
-    if not html.xpath("//input[@name]"):
-        raise DirectDownloadLinkException("ERROR: Unable to find link data")
-    data = {i.get("name"): i.get("value") for i in html.xpath("//input[@name]")}
-    resp = session.get(
-        "https://du2.devuploads.com/dlhash.php",
-        headers={
-            "Origin": "https://gujjukhabar.in",
-            "Referer": "https://gujjukhabar.in/",
-        },
-    )
-    if not resp.text:
-        raise DirectDownloadLinkException("ERROR: Unable to find ipp value")
-    data["ipp"] = resp.text.strip()
-    if not data.get("rand"):
-        raise DirectDownloadLinkException("ERROR: Unable to find rand value")
-    randpost = session.post(
-        "https://devuploads.com/token/token.php",
-        data={"rand": data["rand"], "msg": ""},
-        headers={
-            "Origin": "https://gujjukhabar.in",
-            "Referer": "https://gujjukhabar.in/",
-        },
-    )
-    if not randpost:
-        raise DirectDownloadLinkException("ERROR: Unable to find xd value")
-    data["xd"] = randpost.text.strip()
-    proxy = "http://hsakalu2:hsakalu2@45.151.162.198:6600"
-    res = session.post(url, data=data, proxies={"http": proxy, "https": proxy})
-    html = HTML(res.text)
-    if not html.xpath("//input[@name='orilink']/@value"):
-        raise DirectDownloadLinkException("ERROR: Unable to find Direct Link")
-    direct_link = html.xpath("//input[@name='orilink']/@value")
-    session.close()
-    return direct_link[0]
+    with Session() as session:
+        res = session.get(url)
+        html = HTML(res.text)
+        if not html.xpath("//input[@name]"):
+            raise DirectDownloadLinkException("ERROR: Unable to find link data")
+        data = {i.get("name"): i.get("value") for i in html.xpath("//input[@name]")}
+        res = session.post("https://gujjukhabar.in/", data=data)
+        html = HTML(res.text)
+        if not html.xpath("//input[@name]"):
+            raise DirectDownloadLinkException("ERROR: Unable to find link data")
+        data = {i.get("name"): i.get("value") for i in html.xpath("//input[@name]")}
+        resp = session.get(
+            "https://du2.devuploads.com/dlhash.php",
+            headers={
+                "Origin": "https://gujjukhabar.in",
+                "Referer": "https://gujjukhabar.in/",
+            },
+        )
+        if not resp.text:
+            raise DirectDownloadLinkException("ERROR: Unable to find ipp value")
+        data["ipp"] = resp.text.strip()
+        if not data.get("rand"):
+            raise DirectDownloadLinkException("ERROR: Unable to find rand value")
+        randpost = session.post(
+            "https://devuploads.com/token/token.php",
+            data={"rand": data["rand"], "msg": ""},
+            headers={
+                "Origin": "https://gujjukhabar.in",
+                "Referer": "https://gujjukhabar.in/",
+            },
+        )
+        if not randpost:
+            raise DirectDownloadLinkException("ERROR: Unable to find xd value")
+        data["xd"] = randpost.text.strip()
+        res = session.post(url, data=data)
+        html = HTML(res.text)
+        if not html.xpath("//input[@name='orilink']/@value"):
+            raise DirectDownloadLinkException("ERROR: Unable to find Direct Link")
+        direct_link = html.xpath("//input[@name='orilink']/@value")
+        return direct_link[0]
 
 
 def osdn(url):
@@ -414,24 +401,21 @@ def hxfile(url):
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
     cookies = {cookie.name: cookie.value for cookie in jar}
-    with Session() as session:
-        try:
-            if url.endswith(".html"):
-                url = url[:-5]
-            file_code = url.split("/")[-1]
-            html = HTML(
-                session.post(
-                    url,
-                    data={"op": "download2", "id": file_code},
-                    cookies=cookies,
-                ).text,
-            )
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
+    try:
+        if url.strip().endswith(".html"):
+            url = url[:-5]
+        file_code = url.split("/")[-1]
+        html = HTML(
+            post(
+                url,
+                data={"op": "download2", "id": file_code},
+                cookies=cookies,
+            ).text
+        )
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
     if direct_link := html.xpath("//a[@class='btn btn-dow']/@href"):
-        header = f"Referer: {url}"
+        header = [f"Referer: {url}"]
         return direct_link[0], header
     raise DirectDownloadLinkException("ERROR: Direct download link not found")
 
@@ -490,8 +474,7 @@ def streamtape(url):
     splitted_url = url.split("/")
     _id = splitted_url[4] if len(splitted_url) >= 6 else splitted_url[-1]
     try:
-        with Session() as session:
-            html = HTML(session.get(url).text)
+        html = HTML(get(url).text)
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
     script = html.xpath(
@@ -1086,14 +1069,14 @@ def gofile(url):
             token = __get_token(session)
         except Exception as e:
             raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}")
-        details["header"] = f"Cookie: accountToken={token}"
+        details["header"] = [f"Cookie: accountToken={token}"]
         try:
             __fetch_links(session, _id)
         except Exception as e:
             raise DirectDownloadLinkException(e)
 
     if len(details["contents"]) == 1:
-        return (details["contents"][0]["url"], details["header"])
+        return (details["contents"][0]["url"], [details["header"]])
     return details
 
 
@@ -1138,7 +1121,7 @@ def send_cm_file(url, file_id=None):
                 data["password"] = _password
             _res = session.post("https://send.cm/", data=data, allow_redirects=False)
             if "Location" in _res.headers:
-                return (_res.headers["Location"], "Referer: https://send.cm/")
+                return (_res.headers["Location"], ["Referer: https://send.cm/"])
         except Exception as e:
             raise DirectDownloadLinkException(
                 f"ERROR: {e.__class__.__name__}",
@@ -1237,26 +1220,23 @@ def send_cm(url):
     try:
         mainHtml = HTML(cf_bypass(url))
     except DirectDownloadLinkException as e:
-        session.close()
         raise e
     except Exception as e:
-        session.close()
         raise DirectDownloadLinkException(
             f"ERROR: {e.__class__.__name__} While getting mainHtml",
         )
     try:
         __writeContents(mainHtml, details["title"])
     except DirectDownloadLinkException as e:
-        session.close()
         raise e
     except Exception as e:
-        session.close()
         raise DirectDownloadLinkException(
             f"ERROR: {e.__class__.__name__} While writing Contents",
         )
-    session.close()
+    finally:
+        session.close()
     if len(details["contents"]) == 1:
-        return (details["contents"][0]["url"], details["header"])
+        return (details["contents"][0]["url"], [details["header"]])
     return details
 
 
@@ -1285,7 +1265,10 @@ def doods(url):
             ) from e
     if not (link := search(r"window\.open\('(\S+)'", _res.text)):
         raise DirectDownloadLinkException("ERROR: Download link not found try again")
-    return (link.group(1), f"Referer: {parsed_url.scheme}://{parsed_url.hostname}/")
+    return (
+        link.group(1),
+        [f"Referer: {parsed_url.scheme}://{parsed_url.hostname}/"],
+    )
 
 
 def easyupload(url):
@@ -1395,16 +1378,13 @@ def filelions_and_streamwish(url):
         quality = spited_file_code[1]
         file_code = spited_file_code[0]
     url = f"{scheme}://{hostname}/{file_code}"
-    with Session() as session:
-        try:
-            _res = session.get(
-                f"{apiUrl}/api/file/direct_link",
-                params={"key": apiKey, "file_code": file_code, "hls": "1"},
-            ).json()
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
+    try:
+        _res = get(
+            f"{apiUrl}/api/file/direct_link",
+            params={"key": apiKey, "file_code": file_code, "hls": "1"},
+        ).json()
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
     if _res["status"] != 200:
         raise DirectDownloadLinkException(f"ERROR: {_res['msg']}")
     result = _res["result"]
@@ -1536,7 +1516,7 @@ def tmpsend(url):
     elif not (file_id := parsed_url.path.strip("/")):
         raise DirectDownloadLinkException("ERROR: Invalid URL format")
     referer_url = f"https://tmpsend.com/thank-you?d={file_id}"
-    header = f"Referer: {referer_url}"
+    header = [f"Referer: {referer_url}"]
     download_link = f"https://tmpsend.com/download?d={file_id}"
     return download_link, header
 
@@ -1544,18 +1524,16 @@ def tmpsend(url):
 def qiwi(url):
     """qiwi.gg link generator
     based on https://github.com/aenulrofik"""
-    with Session() as session:
-        file_id = url.split("/")[-1]
-        try:
-            res = session.get(url).text
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
-        tree = HTML(res)
-        if name := tree.xpath('//h1[@class="page_TextHeading__VsM7r"]/text()'):
-            ext = name[0].split(".")[-1]
-            return f"https://spyderrock.com/{file_id}.{ext}"
+    file_id = url.split("/")[-1]
+    try:
+        res = get(url).text
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
+    tree = HTML(res)
+    if name := tree.xpath('//h1[@class="page_TextHeading__VsM7r"]/text()'):
+        ext = name[0].split(".")[-1]
+        return f"https://spyderrock.com/{file_id}.{ext}"
+    else:
         raise DirectDownloadLinkException("ERROR: File not found")
 
 
@@ -1566,7 +1544,7 @@ def mp4upload(url):
             req = session.get(url).text
             tree = HTML(req)
             inputs = tree.xpath("//input")
-            header = {"Referer": "https://www.mp4upload.com/"}
+            header = ["Referer: https://www.mp4upload.com/"]
             data = {input.get("name"): input.get("value") for input in inputs}
             if not data:
                 raise DirectDownloadLinkException("ERROR: File Not Found!")
@@ -1596,13 +1574,10 @@ def mp4upload(url):
 def berkasdrive(url):
     """berkasdrive.com link generator
     by https://github.com/aenulrofik"""
-    with Session() as session:
-        try:
-            sesi = session.get(url).text
-        except Exception as e:
-            raise DirectDownloadLinkException(
-                f"ERROR: {e.__class__.__name__}",
-            ) from e
+    try:
+        sesi = get(url).text
+    except Exception as e:
+        raise DirectDownloadLinkException(f"ERROR: {e.__class__.__name__}") from e
     html = HTML(sesi)
     if link := html.xpath("//script")[0].text.split('"')[1]:
         return b64decode(link).decode("utf-8")
@@ -1637,7 +1612,9 @@ def swisstransfer(link):
 
         if response.status_code == 200:
             try:
-                return response.json(), headers
+                return response.json(), [
+                    f"{k}: {v}" for k, v in headers.items() if v
+                ]
             except ValueError:
                 raise DirectDownloadLinkException(
                     f"ERROR: Error parsing JSON response {response.text}"
@@ -1666,7 +1643,7 @@ def swisstransfer(link):
             f"ERROR: Error generating download token {response.status_code}, {response.text}"
         )
 
-    data, headers = getfile(transfer_id, password)
+    data, _ = getfile(transfer_id, password)
     if not data:
         return None
 
@@ -1685,7 +1662,7 @@ def swisstransfer(link):
         file_uuid = file["UUID"]
         token = gettoken(password, container_uuid, file_uuid)
         download_url = f"https://{download_host}/api/download/{transfer_id}/{file_uuid}?token={token}"
-        return download_url, "User-Agent:Mozilla/5.0"
+        return download_url, ["User-Agent:Mozilla/5.0"]
 
     contents = []
     for file in files:

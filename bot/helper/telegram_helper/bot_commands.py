@@ -44,3 +44,4 @@ class BotCommands:
     BroadcastCommand = [f"broadcast{i}", "broadcastall"]
     SelectCommand = f"sel{i}"
     RssCommand = f"rss{i}"
+    SoxCommand = [f"spectrum{i}", f"sox{i}"]
