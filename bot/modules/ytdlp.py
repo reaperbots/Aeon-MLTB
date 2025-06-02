@@ -355,6 +355,7 @@ class YtDlp(TaskListener):
         self.select = args["-s"]
         self.name = args["-n"]
         self.up_dest = args["-up"]
+        self.raw_up_dest = args["-up"]
         self.rc_flags = args["-rcf"]
         self.link = args["link"]
         self.compress = args["-z"]

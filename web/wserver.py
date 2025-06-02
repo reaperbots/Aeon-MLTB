@@ -248,9 +248,9 @@ async def set_qbittorrent(gid, selected_files, unselected_files):
 async def set_aria2(gid, selected_files):
     res = await aria2.changeOption(gid, {"select-file": selected_files})
     if res == "OK":
-        LOGGER.info(f"Verified! Gid: {gid}")
+        LOGGER.info(f"Verified! gid: {gid}")
     else:
-        LOGGER.info(f"Verification Failed! Report! Gid: {gid}")
+        LOGGER.info(f"Verification Failed! Report! gid: {gid}")
 
 
 @app.get("/", response_class=HTMLResponse)

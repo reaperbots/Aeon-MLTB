@@ -197,7 +197,7 @@ async def get_tg_link_message(link, user_id=""):
             user_session = session_cache[user_id]
         else:
             user_dict = user_data.get(user_id, {})
-            session_string = user_dict.get("session_string")
+            session_string = user_dict.get("USER_SESSION")
             if session_string:
                 user_session = Client(
                     f"session_{user_id}",

@@ -98,6 +98,17 @@ async def get_online_packages(path, state="grabbing"):
     return [dl["uuid"] for dl in download_packages if dl["saveTo"].startswith(path)]
 
 
+def trim_path(path):
+    path_components = path.split("/")
+
+    trimmed_components = [
+        component[:255] if len(component) > 255 else component
+        for component in path_components
+    ]
+
+    return "/".join(trimmed_components)
+
+
 async def get_jd_download_directory():
     res = await jdownloader.device.config.get(
         "org.jdownloader.settings.GeneralSettings",
@@ -149,8 +160,6 @@ async def add_jd_download(listener, path):
                             "autoExtract": False,
                             "links": listener.link,
                             "deepDecrypt": True,
-                            "destinationFolder": path,
-                            "packageName": listener.name or None,
                             "overwritePackagizerRules": listener.join,
                         },
                     ],
@@ -205,6 +214,13 @@ async def add_jd_download(listener, path):
                     online_packages.append(pack["uuid"])
                     if not name:
                         name = pack.get("name", "").replace("/", "").split("/")[0]
+                    save_to = pack["saveTo"]
+                    if save_to.startswith(default_path):
+                        save_to = trim_path(save_to)
+                        await jdownloader.device.linkgrabber.set_download_directory(
+                            save_to.replace(default_path, f"{path}/", 1),
+                            [pack["uuid"]],
+                        )
 
                 if online_packages:
                     break

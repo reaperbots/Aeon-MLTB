@@ -31,6 +31,7 @@ from .torrent_manager import TorrentManager
 
 
 async def update_qb_options():
+    """Updates qBittorrent options either from current preferences or saved configuration."""
     if not qbit_options:
         opt = await TorrentManager.qbittorrent.app.preferences()
         qbit_options.update(opt)
@@ -47,6 +48,7 @@ async def update_qb_options():
 
 
 async def update_aria2_options():
+    """Updates Aria2c global options either from current settings or saved configuration."""
     if not aria2_options:
         op = await TorrentManager.aria2.getGlobalOption()
         aria2_options.update(op)
@@ -55,11 +57,17 @@ async def update_aria2_options():
 
 
 async def update_nzb_options():
+    """Updates NZB options from Sabnzbd client configuration."""
     no = (await sabnzbd_client.get_config())["config"]["misc"]
     nzb_options.update(no)
 
 
 async def load_settings():
+    """Loads bot settings from the database (if DATABASE_URL is set)
+    and applies them to the current runtime configuration.
+    This includes deployment configs, general configs, private files,
+    and user-specific data like thumbnails and rclone configs.
+    """
     if not Config.DATABASE_URL:
         return
     for p in ["thumbnails", "tokens", "rclone"]:
@@ -173,7 +181,7 @@ async def load_settings():
                         await f.write(row["TOKEN_PICKLE"])
                     row["TOKEN_PICKLE"] = token_path
                 user_data[uid] = row
-            LOGGER.info("Users data has been imported from Database")
+            LOGGER.info("User data has been imported from the Database.")
 
         if await database.db.rss[BOT_ID].find_one():
             rows = database.db.rss[BOT_ID].find({})
@@ -181,10 +189,11 @@ async def load_settings():
                 user_id = row["_id"]
                 del row["_id"]
                 rss_dict[user_id] = row
-            LOGGER.info("Rss data has been imported from Database.")
+            LOGGER.info("RSS data has been imported from the Database.")
 
 
 async def save_settings():
+    """Saves the current bot configuration to the database if DATABASE_URL is set."""
     if database.db is None:
         return
     config_dict = Config.get_all()
@@ -212,6 +221,11 @@ async def save_settings():
 
 
 async def update_variables():
+    """Updates various global configuration variables and lists based on the
+    loaded Config values. This includes setting up authorized chats, sudo users,
+    excluded extensions, drive lists, and attempting to determine the BASE_URL
+    if running on Heroku.
+    """
     if (
         Config.LEECH_SPLIT_SIZE > TgClient.MAX_SPLIT_SIZE
         or Config.LEECH_SPLIT_SIZE == 2097152000
@@ -289,6 +303,10 @@ async def update_variables():
 
 
 async def load_configurations():
+    """Performs initial setup for configurations like .netrc,
+    starts the Gunicorn web server, extracts JDownloader config if present,
+    loads shorteners, and sets up service accounts if accounts.zip exists.
+    """
     if not await aiopath.exists(".netrc"):
         async with aiopen(".netrc", "w"):
             pass

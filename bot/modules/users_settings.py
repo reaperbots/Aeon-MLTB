@@ -95,7 +95,7 @@ async def get_user_settings(from_user, stype="main"):
             "User Session",
             f"userset {user_id} menu USER_SESSION",
         )
-        usess = "added" if user_dict.get("USER_DUMP", False) else "None"
+        usess = "added" if user_dict.get("USER_SESSION", False) else "None"
         if user_dict.get("AS_DOCUMENT", False) or (
             "AS_DOCUMENT" not in user_dict and Config.AS_DOCUMENT
         ):
@@ -143,7 +143,7 @@ Leech Type is <b>{ltype}</b>
 Media Group is <b>{media_group}</b>
 Leech Prefix is <code>{escape(lprefix)}</code>
 Leech Caption is <code>{escape(lcap)}</code>
-User session id {usess}
+User session is {usess}
 User dump <code>{udump}</code>
 Thumbnail Layout is <b>{thumb_layout}</b>
 """
@@ -208,6 +208,13 @@ Gdrive Token <b>{tokenmsg}</b>
 Gdrive ID is <code>{gdrive_id}</code>
 Index URL is <code>{index}</code>
 Stop Duplicate is <b>{sd_msg}</b>"""
+    elif stype == "upload_dest":
+        buttons.data_button("Gdrive", f"userset {user_id} set_upload gd")
+        buttons.data_button("Rclone", f"userset {user_id} set_upload rc")
+        buttons.data_button("YouTube", f"userset {user_id} set_upload yt")
+        buttons.data_button("Back", f"userset {user_id} back")
+        buttons.data_button("Close", f"userset {user_id} close")
+        text = f"<u>Upload Destination Settings for {name}</u>"
     else:
         buttons.data_button("Leech", f"userset {user_id} leech")
         buttons.data_button("Rclone", f"userset {user_id} rclone")
@@ -228,12 +235,18 @@ Stop Duplicate is <b>{sd_msg}</b>"""
         if user_dict.get("DEFAULT_UPLOAD", ""):
             default_upload = user_dict["DEFAULT_UPLOAD"]
         elif "DEFAULT_UPLOAD" not in user_dict:
-            default_upload = Config.DEFAULT_UPLOAD
-        du = "Gdrive API" if default_upload == "gd" else "Rclone"
-        dur = "Gdrive API" if default_upload != "gd" else "Rclone"
+            default_upload = Config.DEFAULT_UPLOAD or "gd"  # Set Gdrive as default
+
+        if default_upload == "gd":
+            du = "Gdrive API"
+        elif default_upload == "rc":
+            du = "Rclone"
+        else:
+            du = "YouTube"
+
         buttons.data_button(
-            f"Upload using {dur}",
-            f"userset {user_id} {default_upload}",
+            f"Default Upload {default_upload}",
+            f"userset {user_id} upload_dest",
         )
 
         user_tokens = user_dict.get("USER_TOKENS", False)
@@ -688,12 +701,23 @@ async def edit_user_settings(client, query):
             with BytesIO(msg_ecd) as ofile:
                 ofile.name = "users_settings.txt"
                 await send_file(message, ofile)
-    elif data[2] in ["gd", "rc"]:
+    elif data[2] == "set_upload":
+        await query.answer()
+        update_user_ldata(user_id, "DEFAULT_UPLOAD", data[3])
+        await update_user_settings(query)
+        await database.update_user_data(user_id)
+    elif data[2] in [
+        "gd",
+        "rc",
+    ]:  # This block is now obsolete but kept for safety, can be removed later
         await query.answer()
         du = "rc" if data[2] == "gd" else "gd"
         update_user_ldata(user_id, "DEFAULT_UPLOAD", du)
         await update_user_settings(query)
         await database.update_user_data(user_id)
+    elif data[2] == "upload_dest":
+        await query.answer()
+        await update_user_settings(query, "upload_dest")
     elif data[2] == "back":
         await query.answer()
         await update_user_settings(query)

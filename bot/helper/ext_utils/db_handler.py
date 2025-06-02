@@ -12,12 +12,16 @@ from bot.core.config_manager import Config
 
 
 class DbManager:
+    """A class to manage interactions with the MongoDB database."""
+
     def __init__(self):
-        self._return = True
+        """Initializes the DbManager, setting initial connection state."""
+        self._return = True  # Flag to indicate if DB operations should be skipped
         self._conn = None
         self.db = None
 
     async def connect(self):
+        """Establishes a connection to the MongoDB database using DATABASE_URL."""
         try:
             if self._conn is not None:
                 await self._conn.close()
@@ -25,8 +29,9 @@ class DbManager:
                 Config.DATABASE_URL,
                 server_api=ServerApi("1"),
             )
-            self.db = self._conn.luna
+            self.db = self._conn.luna  # 'luna' is the database name
             self._return = False
+            LOGGER.info("Successfully connected to the database.")
         except PyMongoError as e:
             LOGGER.error(f"Error in DB connection: {e}")
             self.db = None
@@ -34,12 +39,17 @@ class DbManager:
             self._conn = None
 
     async def disconnect(self):
+        """Closes the MongoDB connection."""
         self._return = True
         if self._conn is not None:
             await self._conn.close()
+            LOGGER.info("Database connection closed.")
         self._conn = None
 
     async def update_deploy_config(self):
+        """Updates or creates the deployment configuration in the database
+        based on the current 'config.py' settings.
+        """
         if self._return:
             return
         settings = import_module("config")
@@ -123,6 +133,10 @@ class DbManager:
         )
 
     async def update_user_data(self, user_id):
+        """Updates user-specific data in the database, excluding certain sensitive keys
+        like tokens from the main user_data dict before persisting.
+        It preserves existing THUMBNAIL, RCLONE_CONFIG, TOKEN_PICKLE from DB if not in memory.
+        """
         if self._return:
             return
         data = user_data.get(user_id, {})
@@ -215,11 +229,14 @@ class DbManager:
         return [doc["_id"] async for doc in self.db.pm_users[TgClient.ID].find({})]
 
     async def update_pm_users(self, user_id):
+        """Adds a user_id to the pm_users collection if not already present,
+        logging the addition.
+        """
         if self._return:
             return
         if not bool(await self.db.pm_users[TgClient.ID].find_one({"_id": user_id})):
             await self.db.pm_users[TgClient.ID].insert_one({"_id": user_id})
-            LOGGER.info(f"New PM User Added : {user_id}")
+            LOGGER.info(f"New PM user added: {user_id}")
 
     async def rm_pm_user(self, user_id):
         if self._return:

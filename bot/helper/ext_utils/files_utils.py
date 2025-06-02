@@ -30,6 +30,7 @@ from bot.core.torrent_manager import TorrentManager
 from .bot_utils import cmd_exec, sync_to_async
 from .exceptions import NotSupportedExtractionArchive
 
+# List of recognized archive file extensions
 ARCH_EXT = [
     ".tar.bz2",
     ".tar.gz",
@@ -97,28 +98,34 @@ ARCH_EXT = [
     ".crc64",
 ]
 
+# Regex to identify the first file of a split archive (e.g., .part01.rar, .7z.001)
 FIRST_SPLIT_REGEX = (
     r"\.part0*1\.rar$|\.7z\.0*1$|\.zip\.0*1$|^(?!.*\.part\d+\.rar$).*\.rar$"
 )
 
+# Regex to identify parts of a split archive (e.g., .r01, .7z.002, .part2.rar)
 SPLIT_REGEX = r"\.r\d+$|\.7z\.\d+$|\.z\d+$|\.zip\.\d+$|\.part\d+\.rar$"
 
 
-def is_first_archive_split(file):
+def is_first_archive_split(file: str) -> bool:
+    """Checks if the filename matches the pattern for the first part of a split archive."""
     return bool(re_search(FIRST_SPLIT_REGEX, file.lower(), IGNORECASE))
 
 
-def is_archive(file):
+def is_archive(file: str) -> bool:
+    """Checks if the file is an archive based on its extension."""
     return file.strip().lower().endswith(tuple(ARCH_EXT))
 
 
-def is_archive_split(file):
+def is_archive_split(file: str) -> bool:
+    """Checks if the filename matches the pattern for a part of a split archive."""
     return bool(re_search(SPLIT_REGEX, file.lower(), IGNORECASE))
 
 
-async def clean_target(path):
+async def clean_target(path: str):
+    """Removes the file or directory at the given path."""
     if await aiopath.exists(path):
-        LOGGER.info(f"Cleaning Target: {path}")
+        LOGGER.info(f"Cleaning target: {path}")
         try:
             if await aiopath.isdir(path):
                 await aiormtree(path, ignore_errors=True)
@@ -128,9 +135,10 @@ async def clean_target(path):
             LOGGER.error(str(e))
 
 
-async def clean_download(path):
+async def clean_download(path: str):
+    """Removes the downloaded file or directory at the given path."""
     if await aiopath.exists(path):
-        LOGGER.info(f"Cleaning Download: {path}")
+        LOGGER.info(f"Cleaning download: {path}")
         try:
             await aiormtree(path, ignore_errors=True)
         except Exception as e:
@@ -138,14 +146,16 @@ async def clean_download(path):
 
 
 async def clean_all():
+    """Cleans up all torrents and the main download directory."""
     await TorrentManager.remove_all()
-    LOGGER.info("Cleaning Download Directory")
+    LOGGER.info("Cleaning Download Directory...")
     await (await create_subprocess_exec("rm", "-rf", DOWNLOAD_DIR)).wait()
     await aiomakedirs(DOWNLOAD_DIR, exist_ok=True)
 
 
-async def clean_unwanted(opath):
-    LOGGER.info(f"Cleaning unwanted files/folders: {opath}")
+async def clean_unwanted(opath: str):
+    """Removes unwanted files (e.g., .parts) and empty .unwanted directories."""
+    LOGGER.info(f"Cleaning unwanted files/folders from: {opath}")
     for dirpath, _, files in await sync_to_async(walk, opath, topdown=False):
         for filee in files:
             f_path = ospath.join(dirpath, filee)
@@ -158,7 +168,10 @@ async def clean_unwanted(opath):
             await rmdir(dirpath)
 
 
-async def get_path_size(opath):
+async def get_path_size(opath: str) -> int:
+    """Calculates the total size of a file or directory (recursively for directories).
+    Follows symbolic links for files.
+    """
     total_size = 0
     if await aiopath.isfile(opath):
         if await aiopath.islink(opath):
@@ -173,7 +186,8 @@ async def get_path_size(opath):
     return total_size
 
 
-async def count_files_and_folders(opath):
+async def count_files_and_folders(opath: str) -> tuple[int, int]:
+    """Counts the total number of files and folders within a given path."""
     total_files = 0
     total_folders = 0
     for _, dirs, files in await sync_to_async(walk, opath):
@@ -182,7 +196,10 @@ async def count_files_and_folders(opath):
     return total_folders, total_files
 
 
-def get_base_name(orig_path):
+def get_base_name(orig_path: str) -> str:
+    """Extracts the base name of a file, removing known archive extensions.
+    Raises NotSupportedExtractionArchive if the extension is not found in ARCH_EXT.
+    """
     extension = next(
         (ext for ext in ARCH_EXT if orig_path.strip().lower().endswith(ext)),
         "",
@@ -192,7 +209,11 @@ def get_base_name(orig_path):
     raise NotSupportedExtractionArchive("File format not supported for extraction")
 
 
-async def create_recursive_symlink(source, destination):
+async def create_recursive_symlink(source: str, destination: str):
+    """Creates symbolic links recursively from source to destination.
+    If source is a directory, it replicates the directory structure with symlinks.
+    If source is a file, it creates a symlink for that file.
+    """
     if ospath.isdir(source):
         await aiomakedirs(destination, exist_ok=True)
         for item in await listdir(source):
@@ -208,7 +229,8 @@ async def create_recursive_symlink(source, destination):
             LOGGER.error(f"Error creating shortcut for {source}: {e}")
 
 
-def get_mime_type(file_path):
+def get_mime_type(file_path: str) -> str:
+    """Determines the MIME type of a file. Follows symbolic links."""
     if ospath.islink(file_path):
         file_path = readlink(file_path)
     mime = Magic(mime=True)

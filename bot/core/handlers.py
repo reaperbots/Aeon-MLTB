@@ -207,7 +207,7 @@ def add_handlers():
         ),
         "hydra_search": (
             hydra_search,
-            BotCommands.HydraSearchCommamd,
+            BotCommands.HydraSearchCommand,
             CustomFilters.authorized,
         ),
         "spectrum_handler": (

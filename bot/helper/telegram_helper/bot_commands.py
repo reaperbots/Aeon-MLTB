@@ -22,7 +22,7 @@ class BotCommands:
     ForceStartCommand = [f"forcestart{i}", f"fs{i}"]
     ListCommand = f"list{i}"
     SearchCommand = f"search{i}"
-    HydraSearchCommamd = f"nzbsearch{i}"
+    HydraSearchCommand = f"nzbsearch{i}"
     StatusCommand = [f"status{i}", "statusall"]
     UsersCommand = f"users{i}"
     AuthorizeCommand = [f"auth{i}", f"a{i}"]

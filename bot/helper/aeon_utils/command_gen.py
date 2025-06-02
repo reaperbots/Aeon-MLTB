@@ -6,6 +6,16 @@ from bot import LOGGER, cpu_no
 
 
 async def get_streams(file):
+    """
+    Gets media stream information using ffprobe.
+
+    Args:
+        file: Path to the media file.
+
+    Returns:
+        A list of stream objects (dictionaries) or None if an error occurs
+        or no streams are found.
+    """
     cmd = [
         "ffprobe",
         "-hide_banner",
@@ -34,6 +44,16 @@ async def get_streams(file):
 
 # TODO Lots of work need
 async def get_watermark_cmd(file, key):
+    """
+    Generates an FFmpeg (xtra) command to add a text watermark to a video file.
+
+    Args:
+        file: Path to the input video file.
+        key: The text string to use as the watermark.
+
+    Returns:
+        A tuple containing the command list and the temporary output file path.
+    """
     temp_file = f"{file}.temp.mkv"
     font_path = "default.otf"
 
@@ -59,7 +79,18 @@ async def get_watermark_cmd(file, key):
 
 
 async def get_metadata_cmd(file_path, key):
-    """Processes a single file to update metadata."""
+    """
+    Generates an FFmpeg (xtra) command to update metadata (e.g., title, language)
+    for various streams in a media file.
+
+    Args:
+        file_path: Path to the input media file.
+        key: The metadata value to set (e.g., for title).
+
+    Returns:
+        A tuple containing the command list and the temporary output file path,
+        or (None, None) if streams cannot be read.
+    """
     temp_file = f"{file_path}.temp.mkv"
     streams = await get_streams(file_path)
     if not streams:
@@ -159,6 +190,16 @@ async def get_metadata_cmd(file_path, key):
 
 # TODO later
 async def get_embed_thumb_cmd(file, attachment_path):
+    """
+    Generates an FFmpeg (xtra) command to embed a thumbnail into a media file.
+
+    Args:
+        file: Path to the input media file.
+        attachment_path: Path to the thumbnail image to embed.
+
+    Returns:
+        A tuple containing the command list and the temporary output file path.
+    """
     temp_file = f"{file}.temp.mkv"
     attachment_ext = attachment_path.split(".")[-1].lower()
     mime_type = "application/octet-stream"

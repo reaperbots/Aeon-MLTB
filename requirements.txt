@@ -24,6 +24,7 @@ psutil
 pyshorteners
 python-magic
 pytz
+pytdbot[tdjson]
 requests
 speedtest-cli
 telegraph

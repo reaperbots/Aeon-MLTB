@@ -29,6 +29,7 @@ class MirrorStatus:
     STATUS_METADATA = "Metadata"
     STATUS_WATERMARK = "Watermark"
     STATUS_ETHUMB = "Embed Thumb"
+    STATUS_YT = "YouTube"
 
 
 STATUSES = {

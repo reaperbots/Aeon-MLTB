@@ -17,6 +17,15 @@ from bot import LOGGER, aria2_options
 
 
 def wrap_with_retry(obj, max_retries=3):
+    """Wraps all awaitable methods of an object with a tenacity retry policy.
+
+    Args:
+        obj: The object whose methods to wrap.
+        max_retries: The maximum number of retry attempts.
+
+    Returns:
+        The object with its awaitable methods wrapped.
+    """
     for attr_name in dir(obj):
         if attr_name.startswith("_"):
             continue
@@ -36,21 +45,35 @@ def wrap_with_retry(obj, max_retries=3):
 
 
 class TorrentManager:
+    """Manages Aria2c and qBittorrent client instances and provides
+    common torrent operations.
+    """
+
     aria2 = None
     qbittorrent = None
 
     @classmethod
     async def initiate(cls):
+        """Initializes and wraps Aria2c and qBittorrent client instances."""
         cls.aria2 = await Aria2WebsocketClient.new("http://localhost:6800/jsonrpc")
         cls.qbittorrent = await create_client("http://localhost:8090/api/v2/")
         cls.qbittorrent = wrap_with_retry(cls.qbittorrent)
 
     @classmethod
     async def close_all(cls):
+        """Closes connections to both Aria2c and qBittorrent clients."""
         await gather(cls.aria2.close(), cls.qbittorrent.close())
 
     @classmethod
     async def aria2_remove(cls, download):
+        """Removes a download from Aria2c.
+
+        Forces removal if the download is active, paused, or waiting.
+        Otherwise, removes the download result.
+
+        Args:
+            download: A dictionary containing download information from Aria2c.
+        """
         if download.get("status", "") in ["active", "paused", "waiting"]:
             await cls.aria2.forceRemove(download.get("gid", ""))
         else:
@@ -59,6 +82,7 @@ class TorrentManager:
 
     @classmethod
     async def remove_all(cls):
+        """Pauses all downloads and then removes them from both Aria2c and qBittorrent."""
         await cls.pause_all()
         await gather(
             cls.qbittorrent.torrents.delete("all", False),
@@ -80,6 +104,11 @@ class TorrentManager:
 
     @classmethod
     async def overall_speed(cls):
+        """Calculates the overall download and upload speed from both clients.
+
+        Returns:
+            A tuple containing (download_speed, upload_speed) in bytes/sec.
+        """
         s1, s2 = await gather(
             cls.qbittorrent.transfer.info(),
             cls.aria2.getGlobalStat(),
@@ -90,10 +119,18 @@ class TorrentManager:
 
     @classmethod
     async def pause_all(cls):
+        """Pauses all downloads in both Aria2c and qBittorrent."""
         await gather(cls.aria2.forcePauseAll(), cls.qbittorrent.torrents.stop("all"))
 
     @classmethod
     async def change_aria2_option(cls, key, value):
+        """Changes a specific option for all active/waiting Aria2c downloads
+        and globally if applicable.
+
+        Args:
+            key: The Aria2c option key to change.
+            value: The new value for the option.
+        """
         downloads = []
         results = await gather(
             cls.aria2.tellActive(),
@@ -120,6 +157,17 @@ class TorrentManager:
 
 
 def aria2_name(download_info):
+    """Extracts a display name for an Aria2c download.
+
+    Prefers the BitTorrent info name if available, otherwise tries to
+    derive a name from the file paths.
+
+    Args:
+        download_info: A dictionary containing Aria2c download information.
+
+    Returns:
+        A string representing the display name of the download, or an empty string.
+    """
     if "bittorrent" in download_info and download_info["bittorrent"].get("info"):
         return download_info["bittorrent"]["info"]["name"]
     if download_info.get("files"):
@@ -134,6 +182,14 @@ def aria2_name(download_info):
 
 
 def is_metadata(download_info):
+    """Checks if an Aria2c download is a metadata-only download.
+
+    Args:
+        download_info: A dictionary containing Aria2c download information.
+
+    Returns:
+        True if the download is metadata-only, False otherwise.
+    """
     return any(
         f["path"].startswith("[METADATA]") for f in download_info.get("files", [])
     )

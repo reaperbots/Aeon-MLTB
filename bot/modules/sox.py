@@ -41,7 +41,7 @@ async def spectrum_handler(_, message):
 
     if not is_supported(media.file_name):
         await send_message(
-            message, "Unsupported file format for Sox. Try WAV, MP3, FLAC, etc."
+            message, "Unsupported file format for Sox. Try, WAV, MP3, FLAC, etc."
         )
         return
 

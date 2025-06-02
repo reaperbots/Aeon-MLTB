@@ -15,11 +15,25 @@ from bot.helper.ext_utils.status_utils import (
 
 
 class DefaultDict(dict):
+    """A dictionary that returns a default value for a missing key."""
+
     def __missing__(self, key):
         return "Unknown"
 
 
 async def generate_caption(filename, directory, caption_template):
+    """
+    Generates a caption for a media file based on its MediaInfo
+    and a provided template.
+
+    Args:
+        filename: The name of the media file.
+        directory: The directory where the file is located.
+        caption_template: A string template for the caption with placeholders.
+
+    Returns:
+        A formatted caption string or the original filename if MediaInfo fails.
+    """
     file_path = os.path.join(directory, filename)
 
     try:
@@ -74,6 +88,15 @@ async def generate_caption(filename, directory, caption_template):
 
 
 def get_video_quality(height):
+    """
+    Determines video quality string (e.g., 720p, 1080p) based on video height.
+
+    Args:
+        height: The height of the video in pixels.
+
+    Returns:
+        A string representing the video quality, or "Unknown".
+    """
     if height:
         quality_map = {
             480: "480p",
@@ -91,6 +114,17 @@ def get_video_quality(height):
 
 
 def parse_audio_language(existing_languages, audio_stream):
+    """
+    Parses the language from an audio stream and appends its display name
+    to the existing languages string if not already present.
+
+    Args:
+        existing_languages: A string of already parsed audio languages.
+        audio_stream: A dictionary representing an audio stream from MediaInfo.
+
+    Returns:
+        An updated string of audio languages.
+    """
     language_code = audio_stream.get("Language")
     if language_code:
         with suppress(Exception):
@@ -102,6 +136,17 @@ def parse_audio_language(existing_languages, audio_stream):
 
 
 def parse_subtitle_language(existing_subtitles, subtitle_stream):
+    """
+    Parses the language from a subtitle stream and appends its display name
+    to the existing subtitles string if not already present.
+
+    Args:
+        existing_subtitles: A string of already parsed subtitle languages.
+        subtitle_stream: A dictionary representing a subtitle stream from MediaInfo.
+
+    Returns:
+        An updated string of subtitle languages.
+    """
     subtitle_code = subtitle_stream.get("Language")
     if subtitle_code:
         with suppress(Exception):
@@ -113,6 +158,15 @@ def parse_subtitle_language(existing_subtitles, subtitle_stream):
 
 
 def calculate_md5(file_path):
+    """
+    Calculates the MD5 hash of the given file.
+
+    Args:
+        file_path: The path to the file.
+
+    Returns:
+        A hexadecimal string representing the MD5 hash.
+    """
     md5_hash = md5()
     with open(file_path, "rb") as file:
         for chunk in iter(lambda: file.read(4096), b""):

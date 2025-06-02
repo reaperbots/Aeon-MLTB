@@ -9,6 +9,16 @@ from bot import shorteners_list
 
 
 async def short(long_url):
+    """
+    Shortens a given long URL using a randomly chosen shortener from a predefined list,
+    with a fallback to TinyURL if custom shorteners fail or are not configured.
+
+    Args:
+        long_url: The long URL to be shortened.
+
+    Returns:
+        A shortened URL string, or the original long_url if all shortening attempts fail.
+    """
     if not shorteners_list:
         return long_url
 

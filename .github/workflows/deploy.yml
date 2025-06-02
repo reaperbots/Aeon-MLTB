@@ -41,7 +41,7 @@ jobs:
       - name: Delete unnecessary directories and files
         run: |
           # Directories to delete
-          for dir in bot qBittorrent web; do
+          for dir in bot qBittorrent docs web; do
             if [ -d "./$dir" ]; then
               echo "Deleting directory: $dir"
               rm -rf ./$dir

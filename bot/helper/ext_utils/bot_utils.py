@@ -28,21 +28,41 @@ THREAD_POOL = ThreadPoolExecutor(max_workers=500)
 
 
 class SetInterval:
+    """
+    A class to mimic JavaScript's setInterval functionality, running a
+    specified action at regular intervals.
+    """
+
     def __init__(self, interval, action, *args, **kwargs):
+        """
+        Initializes the SetInterval timer.
+
+        Args:
+            interval: The time interval in seconds between executions.
+            action: The awaitable function to execute.
+            *args: Arguments to pass to the action.
+            **kwargs: Keyword arguments to pass to the action.
+        """
         self.interval = interval
         self.action = action
         self.task = bot_loop.create_task(self._set_interval(*args, **kwargs))
 
     async def _set_interval(self, *args, **kwargs):
+        """The internal coroutine that runs the action periodically."""
         while True:
             await sleep(self.interval)
             await self.action(*args, **kwargs)
 
     def cancel(self):
+        """Cancels the scheduled execution of the action."""
         self.task.cancel()
 
 
 def _build_command_usage(help_dict, command_key):
+    """
+    Builds and stores command usage help messages and buttons
+    for a given command key using its help dictionary.
+    """
     buttons = ButtonMaker()
     for name in list(help_dict.keys())[1:]:
         buttons.data_button(name, f"help {command_key} {name}")
@@ -52,12 +72,23 @@ def _build_command_usage(help_dict, command_key):
 
 
 def create_help_buttons():
+    """Initializes help button structures for various primary commands."""
     _build_command_usage(MIRROR_HELP_DICT, "mirror")
     _build_command_usage(YT_HELP_DICT, "yt")
     _build_command_usage(CLONE_HELP_DICT, "clone")
 
 
 def bt_selection_buttons(id_):
+    """
+    Generates buttons for BitTorrent file selection, including options for
+    web-based selection with or without a PIN code.
+
+    Args:
+        id_: The identifier for the torrent (GID or hash).
+
+    Returns:
+        A ButtonMaker menu object.
+    """
     gid = id_[:12] if len(id_) > 25 else id_
     pin = "".join([n for n in id_ if n.isdigit()][:4])
     buttons = ButtonMaker()
@@ -75,10 +106,20 @@ def bt_selection_buttons(id_):
 
 
 async def get_telegraph_list(telegraph_content):
+    """
+    Creates Telegraph pages from the provided content list.
+    If multiple content parts are provided, it attempts to edit them into a single series.
+
+    Args:
+        telegraph_content: A list of strings, where each string is the HTML content for a page.
+
+    Returns:
+        A ButtonMaker menu object with a button linking to the first Telegraph page.
+    """
     path = [
         (
             await telegraph.create_page(
-                title="Mirror-Leech-Bot Drive Search",
+                title="Aeon-MLTB Drive Search",  # Consistent with project name
                 content=content,
             )
         )["path"]
@@ -92,6 +133,15 @@ async def get_telegraph_list(telegraph_content):
 
 
 def arg_parser(items, arg_base):
+    """
+    Parses a list of items (command arguments) and updates the arg_base dictionary.
+    Handles boolean flags and arguments with values.
+
+    Args:
+        items: A list of strings representing command arguments.
+        arg_base: A dictionary to populate with parsed arguments.
+                  It should be pre-filled with expected argument keys.
+    """
     if not items:
         return
 
@@ -148,6 +198,8 @@ def arg_parser(items, arg_base):
                         if not sub_list:
                             break
                         check = " ".join(sub_list).strip()
+                        if part != "-ff":
+                            break
                         if (
                             check.startswith("[") and check.endswith("]")
                         ) or not check.startswith("["):
@@ -172,6 +224,16 @@ def arg_parser(items, arg_base):
 
 
 def get_size_bytes(size):
+    """
+    Converts a human-readable size string (e.g., '10K', '5M', '2G', '1T')
+    to bytes.
+
+    Args:
+        size: The size string.
+
+    Returns:
+        The size in bytes as an integer, or 0 if the format is unrecognized.
+    """
     size = size.lower()
     if "k" in size:
         size = int(float(size.split("k")[0]) * 1024)
@@ -187,6 +249,15 @@ def get_size_bytes(size):
 
 
 async def get_content_type(url):
+    """
+    Fetches the Content-Type header for a given URL.
+
+    Args:
+        url: The URL to check.
+
+    Returns:
+        The Content-Type string or None if an error occurs or header is not found.
+    """
     try:
         async with AsyncClient(follow_redirects=True, verify=False) as client:
             response = await client.head(url)
@@ -198,11 +269,29 @@ async def get_content_type(url):
 
 
 def update_user_ldata(id_, key, value):
+    """
+    Updates or adds a key-value pair to a user's data in the global user_data dictionary.
+
+    Args:
+        id_: The user ID.
+        key: The key for the data.
+        value: The value to set for the key.
+    """
     user_data.setdefault(id_, {})
     user_data[id_][key] = value
 
 
 async def cmd_exec(cmd, shell=False):
+    """
+    Executes a shell command asynchronously.
+
+    Args:
+        cmd: The command to execute (list of arguments or string if shell=True).
+        shell: Whether to use the shell for execution (default: False).
+
+    Returns:
+        A tuple (stdout_str, stderr_str, return_code).
+    """
     if shell:
         proc = await create_subprocess_shell(cmd, stdout=PIPE, stderr=PIPE)
     else:
@@ -220,6 +309,8 @@ async def cmd_exec(cmd, shell=False):
 
 
 def new_task(func):
+    """Decorator to run the wrapped awaitable function as a new task in the bot's event loop."""
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         return bot_loop.create_task(func(*args, **kwargs))
@@ -228,17 +319,47 @@ def new_task(func):
 
 
 async def sync_to_async(func, *args, wait=True, **kwargs):
+    """
+    Runs a synchronous function asynchronously in a dedicated thread pool.
+
+    Args:
+        func: The synchronous function to run.
+        *args: Arguments to pass to the function.
+        wait: If True (default), awaits the result. Otherwise, returns the future.
+        **kwargs: Keyword arguments to pass to the function.
+
+    Returns:
+        The result of the function if wait is True, otherwise the Future object.
+    """
     pfunc = partial(func, *args, **kwargs)
     future = bot_loop.run_in_executor(THREAD_POOL, pfunc)
     return await future if wait else future
 
 
 def async_to_sync(func, *args, wait=True, **kwargs):
+    """
+    Runs an asynchronous function synchronously from a thread by submitting it
+    to the bot's event loop.
+
+    Args:
+        func: The asynchronous (awaitable) function to run.
+        *args: Arguments to pass to the function.
+        wait: If True (default), waits for and returns the result. Otherwise, returns the future.
+        **kwargs: Keyword arguments to pass to the function.
+
+    Returns:
+        The result of the coroutine if wait is True, otherwise the Future object.
+    """
     future = run_coroutine_threadsafe(func(*args, **kwargs), bot_loop)
     return future.result() if wait else future
 
 
 def loop_thread(func):
+    """
+    Decorator to run an awaitable function in the bot's event loop
+    from a synchronous context, typically another thread.
+    """
+
     @wraps(func)
     def wrapper(*args, wait=False, **kwargs):
         future = run_coroutine_threadsafe(func(*args, **kwargs), bot_loop)

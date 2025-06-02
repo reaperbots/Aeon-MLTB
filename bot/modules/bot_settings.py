@@ -57,7 +57,7 @@ DEFAULT_VALUES = {
     "LEECH_SPLIT_SIZE": TgClient.MAX_SPLIT_SIZE,
     "RSS_DELAY": 600,
     "UPSTREAM_BRANCH": "main",
-    "DEFAULT_UPLOAD": "rc",
+    "DEFAULT_UPLOAD": "gd",
 }
 
 
